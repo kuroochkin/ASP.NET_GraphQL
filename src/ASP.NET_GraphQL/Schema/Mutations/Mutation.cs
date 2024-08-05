@@ -1,4 +1,7 @@
-﻿namespace ASP.NET_GraphQL.Schema;
+﻿using ASP.NET_GraphQL.Schema.Subscriptions;
+using HotChocolate.Subscriptions;
+
+namespace ASP.NET_GraphQL.Schema;
 
 public class Mutation
 {
@@ -9,9 +12,11 @@ public class Mutation
         _courses = new List<CourseResult>();
     }
     
-    public CourseResult CreateCourse(CourseInputType courseInput)
+    public async Task<CourseResult> CreateCourse(
+        CourseInputType courseInput, 
+        [Service] ITopicEventSender topicEventSender)
     {
-        var courseResult = new CourseResult
+        var course = new CourseResult
         {
             Id = Guid.NewGuid(),
             Name = courseInput.Name,
@@ -19,9 +24,10 @@ public class Mutation
             InstructorId = courseInput.InstructorId
         };
         
-        _courses.Add(courseResult);
+        _courses.Add(course);
+        await topicEventSender.SendAsync(nameof(Subscription.CourseCreated), course);
 
-        return courseResult;
+        return course;
     }
     
     public CourseResult UpdateCourse(Guid id, CourseInputType courseInput)
